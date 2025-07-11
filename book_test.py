@@ -18,36 +18,33 @@ def test_get_snowflake_connection():
 
 def test_create_account():
     hashed_pw = b"hashed"
-    with patch("appv5.bcrypt.hashpw", return_value=hashed_pw), \
-         patch("appv5.get_snowflake_connection") as mock_conn:
+    with patch("appv5.bcrypt.hashpw", return_value=hashed_pw), patch(
+        "appv5.get_snowflake_connection"
+    ) as mock_conn:
         mock_cursor = MagicMock()
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         appv5.create_account("testuser", "password123")
         mock_cursor.execute.assert_called()
 
 
 def test_login_success():
     hashed_pw = b"hashed"
-    with patch("appv5.bcrypt.checkpw", return_value=True), \
-         patch("appv5.get_snowflake_connection") as mock_conn:
+    with patch("appv5.bcrypt.checkpw", return_value=True), patch(
+        "appv5.get_snowflake_connection"
+    ) as mock_conn:
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = ("testuser", hashed_pw)
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         assert appv5.login("testuser", "password123") is True
 
 
 def test_login_failure():
-    with patch("appv5.bcrypt.checkpw", return_value=False), \
-         patch("appv5.get_snowflake_connection") as mock_conn:
+    with patch("appv5.bcrypt.checkpw", return_value=False), patch(
+        "appv5.get_snowflake_connection"
+    ) as mock_conn:
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = ("testuser", b"wronghash")
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         assert appv5.login("testuser", "wrongpass") is False
 
 
@@ -63,8 +60,7 @@ def test_retrieve_recommendations():
 
 def test_recommend_books():
     with patch(
-        "appv5.retrieve_recommendations",
-        return_value=[{"page_content": "Book A"}]
+        "appv5.retrieve_recommendations", return_value=[{"page_content": "Book A"}]
     ):
         books = appv5.recommend_books("Science")
         assert isinstance(books, list)
@@ -77,9 +73,7 @@ def test_add_to_reading_list():
     book_info = {"title": "1984", "authors": "George Orwell"}
     with patch("appv5.get_snowflake_connection") as mock_conn:
         mock_cursor = MagicMock()
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         appv5.add_to_reading_list("user1", book_info)
         mock_cursor.execute.assert_called()
 
@@ -87,12 +81,8 @@ def test_add_to_reading_list():
 def test_get_reading_list():
     with patch("appv5.get_snowflake_connection") as mock_conn:
         mock_cursor = MagicMock()
-        mock_cursor.fetchall.return_value = [
-            ("Title", "Author", "Image")
-        ]
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_cursor.fetchall.return_value = [("Title", "Author", "Image")]
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         result = appv5.get_reading_list("user1")
         assert isinstance(result, list)
 
