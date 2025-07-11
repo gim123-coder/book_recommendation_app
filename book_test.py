@@ -1,10 +1,16 @@
+import sys
+from unittest.mock import MagicMock
+
+# Mock config modules so import appv5 doesn't fail
+sys.modules["config"] = MagicMock()
+sys.modules["configy"] = MagicMock()
+
+import pytest
 from unittest.mock import patch, MagicMock
 import appv5
 
 
 # === Snowflake Connection ===
-
-
 def test_get_snowflake_connection():
     with patch("appv5.snowflake.connector.connect") as mock_connect:
         mock_connect.return_value = MagicMock()
@@ -14,55 +20,36 @@ def test_get_snowflake_connection():
 
 
 # === Authentication ===
-
-
 def test_create_account():
     hashed_pw = b"hashed"
-    with patch("appv5.bcrypt.hashpw", return_value=hashed_pw), patch(
-        "appv5.get_snowflake_connection"
-    ) as mock_conn:
+    with patch("appv5.bcrypt.hashpw", return_value=hashed_pw), \
+         patch("appv5.get_snowflake_connection") as mock_conn:
         mock_cursor = MagicMock()
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         appv5.create_account("testuser", "password123")
         mock_cursor.execute.assert_called()
 
 
 def test_login_success():
     hashed_pw = b"hashed"
-    with patch("appv5.bcrypt.checkpw", return_value=True), patch(
-        "appv5.get_snowflake_connection"
-    ) as mock_conn:
+    with patch("appv5.bcrypt.checkpw", return_value=True), \
+         patch("appv5.get_snowflake_connection") as mock_conn:
         mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = (
-            "testuser",
-            hashed_pw,
-        )
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_cursor.fetchone.return_value = ("testuser", hashed_pw)
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         assert appv5.login("testuser", "password123") is True
 
 
 def test_login_failure():
-    with patch("appv5.bcrypt.checkpw", return_value=False), patch(
-        "appv5.get_snowflake_connection"
-    ) as mock_conn:
+    with patch("appv5.bcrypt.checkpw", return_value=False), \
+         patch("appv5.get_snowflake_connection") as mock_conn:
         mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = (
-            "testuser",
-            b"wronghash",
-        )
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_cursor.fetchone.return_value = ("testuser", b"wronghash")
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         assert appv5.login("testuser", "wrongpass") is False
 
 
 # === Recommendation & Vector Store ===
-
-
 def test_retrieve_recommendations():
     with patch("appv5.db_books.similarity_search") as mock_search:
         mock_search.return_value = [{"page_content": "Book A"}]
@@ -71,37 +58,25 @@ def test_retrieve_recommendations():
 
 
 def test_recommend_books():
-    with patch(
-        "appv5.retrieve_recommendations",
-        return_value=[{"page_content": "Book A"}],
-    ):
+    with patch("appv5.retrieve_recommendations", return_value=[{"page_content": "Book A"}]):
         books = appv5.recommend_books("Science")
         assert isinstance(books, list)
 
 
 # === Reading List ===
-
-
 def test_add_to_reading_list():
-    book_info = {"title": "1984", "authors": "George Orwell"}
     with patch("appv5.get_snowflake_connection") as mock_conn:
         mock_cursor = MagicMock()
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
-        appv5.add_to_reading_list("user1", book_info)
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
+        appv5.add_to_reading_list("user1", "1234567890123")
         mock_cursor.execute.assert_called()
 
 
 def test_get_reading_list():
     with patch("appv5.get_snowflake_connection") as mock_conn:
         mock_cursor = MagicMock()
-        mock_cursor.fetchall.return_value = [
-            ("Title", "Author", "Image")
-        ]
-        mock_conn.return_value.cursor.return_value.__enter__.return_value = (
-            mock_cursor
-        )
+        mock_cursor.fetchall.return_value = [("Title", "Author", "Image")]
+        mock_conn.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         result = appv5.get_reading_list("user1")
         assert isinstance(result, list)
 
@@ -113,22 +88,19 @@ def test_format_reading_list():
 
 
 # === Gradio Wrapper Functions ===
-
-
 def test_login_fn_success():
-    with patch("appv5.login", return_value=True):
+    with patch("appv5.login", return_value=(True, "Welcome!")):
         response = appv5.login_fn("testuser", "password123")
-        assert "Welcome" in response
+        assert response[3] == "Welcome!"
 
 
 def test_login_fn_failure():
-    with patch("appv5.login", return_value=False):
+    with patch("appv5.login", return_value=(False, "Invalid credentials")):
         response = appv5.login_fn("testuser", "wrongpass")
-        assert "Invalid" in response
+        assert response[3] == "Invalid credentials"
 
 
 def test_signup_fn():
-    with patch("appv5.create_account") as mock_create:
-        response = appv5.signup_fn("newuser", "securepass")
-        mock_create.assert_called_once()
+    with patch("appv5.create_account", return_value="Your account has been created."):
+        response = appv5.signup_fn("newuser", "securepass", True)
         assert "account has been created" in response
