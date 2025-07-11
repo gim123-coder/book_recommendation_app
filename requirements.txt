@@ -14,7 +14,6 @@ gradio
 flax 
 tensorflow
 torch
-os
 snowflake-connector-python
 bcrypt
 langchain-openai
