@@ -1,2 +1,5 @@
-.ipynb_checkpoints/
-__pycache__/
+config.py
+configy.py
+*.env
+.DS_Store
+.ipynb_checkpoints
