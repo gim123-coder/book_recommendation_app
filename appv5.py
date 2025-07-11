@@ -505,7 +505,7 @@ if __name__ == "__main__":
 # In[35]:
 
 
-demo.close()
+# demo.close()
 
 
 # In[ ]:
