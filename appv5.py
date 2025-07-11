@@ -443,6 +443,5 @@ with gr.Blocks(css=css, theme=gr.themes.Soft(primary_hue="orange")) as demo:
 if __name__ == "__main__":
     demo.launch()
 
-demo.close()
-print("Gradio app has been closed.")
-
+#demo.close()
+#print("Gradio app has been closed.")
