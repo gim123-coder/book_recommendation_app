@@ -1,0 +1,6 @@
+gradio
+pandas
+openai
+flake8
+black
+snowflake-connector-python
